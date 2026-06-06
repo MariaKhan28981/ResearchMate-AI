@@ -6,7 +6,7 @@ app = create_research_graph()
 
 state = {
 
-    "question": "Find the main contribution of this paper",
+    "question": "What is the conclusion of this research paper?",
 
     "retrieved_chunks": [],
 

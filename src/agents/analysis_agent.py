@@ -1,5 +1,5 @@
 from src.agents.state import ResearchState
-from src.llm.llm import get_llm
+from src.llm.llm_client import get_llm
 
 
 def analysis_agent(state: ResearchState):
@@ -20,9 +20,14 @@ def analysis_agent(state: ResearchState):
 
     prompt = f"""
 
-You are a research paper analysis assistant.
+You are a carefulresearch paper analyst.
 
-Use only the provided context.
+RULES:
+- Use ONLY the provided context
+- Ignore code fragments and tables unless relevant
+- Do NOT guess missing information
+- If context is unclear, say "insufficient information"
+
 
 Question:
 {question}
