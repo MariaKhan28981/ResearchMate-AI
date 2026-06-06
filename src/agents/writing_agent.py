@@ -1,29 +1,29 @@
 from src.llm.llm_client import get_llm
 
+llm = get_llm()
 
 def writing_agent(state: dict) -> dict:
     """
-    Takes analysis output and converts it into final polished answer.
+    Final writing agent that converts analysis into polished answer.
     """
 
     question = state["question"]
     analysis = state.get("analysis", "")
     chunks = state.get("retrieved_chunks", [])
 
-    llm = get_llm()
+    context = "\n\n".join(chunks)
 
     prompt = f"""
-You are a professional research paper writing assistant.
+You are a research writing assistant.
 
-Your job is to convert analysis into a clean, structured, high-quality final answer.
+Your task is to produce a FINAL polished answer.
 
-RULES:
-- Do NOT repeat chunks verbatim
-- Do NOT say "based on context"
-- Do NOT mention retrieval process
+Rules:
+- Be precise
+- Do not say "insufficient information"
+- Use ONLY provided context
 - Keep answer concise but complete
-- If analysis is weak, still produce best possible structured answer
-- Use academic tone
+- If multiple interpretations exist, summarize best one
 
 QUESTION:
 {question}
@@ -31,14 +31,13 @@ QUESTION:
 ANALYSIS:
 {analysis}
 
-RETRIEVED CONTEXT (for reference only):
-{chunks}
+CONTEXT:
+{context}
 
 Now write the final answer:
 """
 
     response = llm.invoke(prompt)
 
-    state["final_answer"] = response.content if hasattr(response, "content") else str(response)
-
+    state["final_answer"] = response.content
     return state
