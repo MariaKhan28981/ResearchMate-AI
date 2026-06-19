@@ -1,3 +1,4 @@
+from agents import state
 from src.agents.state import ResearchState
 from src.llm.llm_client import get_llm
 
@@ -18,30 +19,31 @@ def analysis_agent(state: ResearchState):
     llm = get_llm()
 
 
-    prompt = f"""
+    prompt = """
+    You are an expert research paper analyst.
 
-You are a carefulresearch paper analyst.
+    You are given retrieved sections from ONE research paper.
 
-RULES:
-- Use ONLY the provided context
-- Ignore code fragments and tables unless relevant
-- Do NOT guess missing information
-- If context is unclear, say "insufficient information"
-
-
-Question:
-{question}
-
+    Rules:
+1. Use only the provided context.
+2. Do not combine information from unrelated papers.
+3. If a section looks unrelated, ignore it.
+4. For summary:
+   - identify paper goal
+   - identify proposed method
+   - identify experiments
+   - identify conclusion
+5. Never invent datasets, tasks, or methods.
 
 Context:
 {context}
 
+Question:
+{question}
 
-Give a clear analysis.
-
-"""
-
-
+Answer:
+""" 
+    
     response = llm.invoke(prompt)
 
 

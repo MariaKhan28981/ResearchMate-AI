@@ -1,25 +1,17 @@
-from src.rag.embeddings import get_embeddings
 from langchain_chroma import Chroma
+from src.rag.embeddings import get_embeddings
 
 
-def get_retriever():
-
-    embeddings = get_embeddings()
-
-
-    vector_store = Chroma(
-        persist_directory="vectorstore",
-        embedding_function=embeddings
-    )
-
+def create_retriever(vector_store):
 
     retriever = vector_store.as_retriever(
         search_type="mmr",
         search_kwargs={
-            "k": 3,
-            "fetch_k": 15,
+            "k": 8,
+            "fetch_k": 30,
+            "lambda_mult": 0.7
         }
     )
 
-
     return retriever
+

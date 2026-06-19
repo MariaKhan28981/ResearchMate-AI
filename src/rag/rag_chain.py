@@ -1,6 +1,6 @@
 from src.rag.retriever import get_retriever
 from src.llm.llm_client import get_llm
-
+from langchain.prompts import PromptTemplate
 
 def create_rag_chain():
 
@@ -20,16 +20,26 @@ def create_rag_chain():
         )
 
 
-        prompt = f"""
-You are ResearchMate-AI.
+      from langchain.prompts import PromptTemplate
 
-Answer the question using only the provided context.
-Rules:
-- Do not use outside knowledge.
-- If the answer is not present in context, say so.
-- Prefer information from abstract, introduction, and conclusion sections.
-- Give a concise research-style answer.
 
+prompt = PromptTemplate(
+    input_variables=[
+        "context",
+        "question"
+    ],
+    template="""
+
+You are a research paper assistant.
+
+Answer ONLY from the provided context.
+
+If the answer is not present in the context,
+say:
+"I cannot find this information in the paper."
+
+Do not guess.
+Do not use outside knowledge.
 
 Context:
 {context}
@@ -38,9 +48,10 @@ Context:
 Question:
 {question}
 
+
 Answer:
 """
-
+  
 
         response = llm.invoke(prompt)
 

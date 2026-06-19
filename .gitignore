@@ -1,4 +1,7 @@
 venv/
 .env
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
 __pycache__/
 vectorstore/
