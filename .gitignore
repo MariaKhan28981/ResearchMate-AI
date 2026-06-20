@@ -1,7 +1,68 @@
+# ======================
+# Python Backend
+# ======================
+
+# Virtual environment
 venv/
-.env
-*.pyc
-.ipynb_checkpoints/
-.DS_Store
+.venv/
+env/
+
+# Python cache
 __pycache__/
-vectorstore/
+*.py[cod]
+*.pyo
+
+# Environment variables
+.env
+
+# FastAPI / logs
+*.log
+
+
+# ======================
+# ResearchHelp Data
+# ======================
+
+# Uploaded research papers
+backend/papers/
+
+# Chroma vector database
+backend/chroma_db/
+
+# Generated summaries/cache
+backend/paper_summary.json
+
+
+# ======================
+# Jupyter / notebooks
+# ======================
+
+.ipynb_checkpoints/
+
+
+# ======================
+# Frontend
+# ======================
+
+frontend/node_modules/
+
+frontend/dist/
+
+# Vite cache
+frontend/.vite/
+
+
+# ======================
+# OS files
+# ======================
+
+.DS_Store
+Thumbs.db
+
+
+# ======================
+# IDE
+# ======================
+
+.vscode/
+.idea/
