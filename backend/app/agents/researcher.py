@@ -1,82 +1,162 @@
-from app.rag.vectorstore import get_vectorstore
-from app.storage import load_summary
+from langchain_ollama import OllamaEmbeddings
+from langchain_chroma import Chroma
+
+
+DB_DIR = "chroma_db"
+COLLECTION_NAME = "current_paper"
+
 
 
 def research_agent(state):
 
-    print("🔍 Research Agent running")
+    print("🔍 Research agent searching...")
 
 
-    vectorstore = get_vectorstore()
+    embeddings = OllamaEmbeddings(
+        model="nomic-embed-text"
+    )
+
+
+    vectorstore = Chroma(
+
+        persist_directory=DB_DIR,
+
+        embedding_function=embeddings,
+
+        collection_name=COLLECTION_NAME
+
+    )
+
 
 
     question = state["question"]
 
 
-    # Handle summary questions
-    if "summary" in question.lower():
 
-        cached_summary = load_summary()
+    # ---------------------------------
+    # Get complete paper information
+    # First pages -> title/authors
+    # Last pages -> conclusion/future scope
+    # ---------------------------------
 
-        if cached_summary:
-
-            return {
-                "context": cached_summary,
-                "sources": [
-                    "Generated Summary"
-                ]
-            }
-
-
-    # Get first pages for global awareness
     all_docs = vectorstore.get()
+
 
 
     global_context = ""
 
 
+
     if all_docs and "documents" in all_docs:
 
-        global_context = "\n\n".join(
-            all_docs["documents"][:8]
-        )
+
+        documents = all_docs["documents"]
+
+        metadatas = all_docs["metadatas"]
 
 
+        total = len(documents)
+
+
+
+        # first pages
+        for text, meta in zip(
+
+            documents[:5],
+
+            metadatas[:5]
+
+        ):
+
+
+            global_context += f"""
+
+PAGE {meta.get("page")}
+
+{text}
+
+----------------
+
+"""
+
+
+
+        # last pages
+        if total > 5:
+
+
+            for text, meta in zip(
+
+                documents[-5:],
+
+                metadatas[-5:]
+
+            ):
+
+
+                global_context += f"""
+
+PAGE {meta.get("page")}
+
+{text}
+
+----------------
+
+"""
+
+
+
+    # ---------------------------------
     # Semantic retrieval
-    docs = vectorstore.similarity_search(
+    # ---------------------------------
+
+    results = vectorstore.similarity_search(
+
         question,
+
         k=8
+
     )
 
 
-    context = (
-        "[PAPER OVERVIEW]\n"
-        + global_context
-        +
-        "\n\n[RELEVANT SECTIONS]\n"
-    )
+
+    search_context = ""
 
 
-    sources=[]
+
+    for doc in results:
 
 
-    for d in docs:
+        search_context += f"""
 
-        context += (
-            f"\n\nPage {d.metadata['page']}:\n"
-            f"{d.page_content}"
-        )
+PAGE {doc.metadata.get("page")}
+
+{doc.page_content}
+
+----------------
+
+"""
 
 
-        sources.append(
-            f"Page {d.metadata['page']}"
-        )
+
+    final_context = f"""
+
+===== IMPORTANT PAPER PAGES =====
+
+{global_context}
+
+
+
+===== RELEVANT SEARCH RESULTS =====
+
+{search_context}
+
+"""
+
 
 
     return {
 
-        "context": context,
-
-        "sources": sources
+        "context": final_context
 
     }

@@ -1,49 +1,41 @@
 from langchain_ollama import ChatOllama
 
 
-def writer_agent(state):
 
-    print("✍️ Writer Agent running")
+def writer_agent(state):
 
 
     llm = ChatOllama(
+
         model="llama3.2",
-        temperature=0.1
+
+        temperature=0,
+
+        num_predict=500
+
     )
 
 
     prompt=f"""
 
-You are a research paper expert.
+You are a research paper assistant.
 
-Your job is to answer questions about a paper.
+Answer the user's question using ONLY the paper context.
 
-Use ALL available context:
-- Paper overview
-- Relevant sections
+Important rules:
 
-
-Rules:
-
-1. For author/title/date questions:
-   prioritize the paper overview.
-
-2. For summary questions:
-   create a structured summary:
-
-   - Title
-   - Authors
-   - Problem
-   - Methodology
-   - Dataset
-   - Results
-   - Conclusion
+- Answer only what was asked.
+- Do not provide a full summary unless requested.
+- Do not repeat unrelated sections.
+- Do not guess.
+- Do not use outside knowledge.
+- Do not convert initials into fake full names.
+- Authors means only the paper author list.
 
 
-3. Never hallucinate.
+If information is unavailable, say:
 
-4. If information is unavailable say:
-"I cannot find this in the paper."
+"I could not find this information in the uploaded paper."
 
 
 Question:
@@ -51,7 +43,7 @@ Question:
 {state["question"]}
 
 
-Context:
+Paper Context:
 
 {state["context"]}
 
@@ -65,5 +57,7 @@ Answer:
 
 
     return {
-        "answer": response.content
+
+        "answer":response.content
+
     }
