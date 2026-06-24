@@ -1,184 +1,123 @@
 import os
 import shutil
-import uuid
-from fastapi import APIRouter, UploadFile, File
-
 import fitz
+
+from fastapi import APIRouter, UploadFile, File
 
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-
 from langchain_ollama import OllamaEmbeddings
 from langchain_chroma import Chroma
 
 
 router = APIRouter()
 
-
-PAPERS_DIR = "papers"
-DB_DIR = "chroma_db"
+BASE_DIR = "app/data/chats"
 
 
-
-@router.post("/upload")
-async def upload(
+@router.post("/upload/{chat_id}")
+async def upload_pdf(
+    chat_id: str,
     file: UploadFile = File(...)
 ):
 
     try:
 
-        print("📄 Upload started")
-
-
-        os.makedirs(
-            PAPERS_DIR,
-            exist_ok=True
+        chat_path = os.path.join(
+            BASE_DIR,
+            chat_id
         )
 
+        if not os.path.exists(chat_path):
 
-        file_path = os.path.join(
-            PAPERS_DIR,
+            return {
+                "error": "Chat not found"
+            }
+
+        papers_dir = os.path.join(
+            chat_path,
+            "papers"
+        )
+
+        chroma_dir = os.path.join(
+            chat_path,
+            "chroma"
+        )
+
+        pdf_path = os.path.join(
+            papers_dir,
             file.filename
         )
 
-
-        # save file
-
-        with open(file_path, "wb") as buffer:
+        with open(pdf_path, "wb") as buffer:
 
             shutil.copyfileobj(
                 file.file,
                 buffer
             )
 
+        print(f"Saved: {file.filename}")
 
-        print("✅ PDF saved")
+        pdf = fitz.open(pdf_path)
 
+        docs = []
 
-
-        # Extract text
-
-        pdf = fitz.open(file_path)
-
-
-        documents = []
-
-
-        for page_number,page in enumerate(pdf):
+        for page_num, page in enumerate(pdf):
 
             text = page.get_text()
 
-
             if text.strip():
 
-                documents.append(
+                docs.append(
 
                     Document(
 
                         page_content=text,
 
                         metadata={
-
                             "source": file.filename,
-
-                            "page": page_number + 1
-
+                            "page": page_num + 1
                         }
 
                     )
 
                 )
 
-
-        print(
-            f"Extracted pages: {len(documents)}"
-        )
-
-
-
-        # Split
-
         splitter = RecursiveCharacterTextSplitter(
-
             chunk_size=1000,
-
             chunk_overlap=150
-
         )
 
-
-        chunks = splitter.split_documents(
-            documents
-        )
-
-
-        print(
-            f"Chunks created: {len(chunks)}"
-        )
-
-
-
-        # Remove old DB safely
-
-        if os.path.exists(DB_DIR):
-
-            try:
-
-                shutil.rmtree(DB_DIR)
-
-            except PermissionError:
-
-                print(
-                    "Old chroma still locked, skipping delete"
-                )
-
-
+        chunks = splitter.split_documents(docs)
 
         embeddings = OllamaEmbeddings(
-
             model="nomic-embed-text"
-
         )
 
-        collection_name="current_paper"
-
-        Chroma.from_documents(
-
-            documents=chunks,
-
-            embedding=embeddings,
-
-            persist_directory=DB_DIR,
-
-            collection_name=collection_name
-
+        vectorstore = Chroma(
+            persist_directory=chroma_dir,
+            embedding_function=embeddings
         )
 
-
-        print(
-            "✅ Vector database created"
-        )
-
+        vectorstore.add_documents(chunks)
 
         return {
 
             "message":
-            "Paper processed successfully"
+            f"{file.filename} uploaded successfully",
+
+            "pages":
+            len(docs),
+
+            "chunks":
+            len(chunks)
 
         }
 
-
     except Exception as e:
 
-
-        print(
-            "UPLOAD ERROR:",
-            e
-        )
-
+        print("UPLOAD ERROR:", e)
 
         return {
-
-            "error":str(e)
-
+            "error": str(e)
         }

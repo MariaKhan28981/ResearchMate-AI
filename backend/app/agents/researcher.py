@@ -1,162 +1,226 @@
-from langchain_ollama import OllamaEmbeddings
-from langchain_chroma import Chroma
+from app.core.vectorstore import get_vectorstore
 
 
-DB_DIR = "chroma_db"
-COLLECTION_NAME = "current_paper"
+def classify_intent(question: str):
 
+    q = question.lower()
+
+    if any(word in q for word in [
+        "title",
+        "author",
+        "authors",
+        "affiliation",
+        "journal",
+        "conference",
+        "published",
+        "doi"
+    ]):
+        return "metadata"
+
+    elif any(word in q for word in [
+        "summary",
+        "summarize",
+        "overview",
+        "abstract"
+    ]):
+        return "summary"
+
+    elif any(word in q for word in [
+        "method",
+        "methodology",
+        "approach",
+        "framework",
+        "architecture",
+        "algorithm",
+        "model"
+    ]):
+        return "methodology"
+
+    elif any(word in q for word in [
+        "dataset",
+        "data",
+        "samples",
+        "training data"
+    ]):
+        return "dataset"
+
+    elif any(word in q for word in [
+        "result",
+        "accuracy",
+        "performance",
+        "experiment",
+        "evaluation",
+        "metric"
+    ]):
+        return "results"
+
+    elif any(word in q for word in [
+        "conclusion",
+        "conclude",
+        "final findings"
+    ]):
+        return "conclusion"
+
+    elif any(word in q for word in [
+        "future work",
+        "future scope",
+        "future direction"
+    ]):
+        return "future_work"
+
+    elif any(word in q for word in [
+        "limitation",
+        "limitations",
+        "drawback",
+        "weakness"
+    ]):
+        return "limitations"
+
+    return "general"
+
+
+def retrieve_docs(vectorstore, intent, question):
+
+    if intent == "metadata":
+
+        query = """
+        title authors affiliations journal conference publication
+        """
+
+        return vectorstore.similarity_search(
+            query,
+            k=15
+        )
+
+    elif intent == "summary":
+
+        query = """
+        abstract introduction contribution overview paper summary
+        """
+
+        return vectorstore.similarity_search(
+            query,
+            k=15
+        )
+
+    elif intent == "methodology":
+
+        query = """
+        methodology proposed method framework architecture algorithm
+        """
+
+        return vectorstore.similarity_search(
+            query,
+            k=15
+        )
+
+    elif intent == "dataset":
+
+        query = """
+        dataset data collection preprocessing samples
+        """
+
+        return vectorstore.similarity_search(
+            query,
+            k=15
+        )
+
+    elif intent == "results":
+
+        query = """
+        results experiments evaluation performance accuracy recall precision
+        """
+
+        return vectorstore.similarity_search(
+            query,
+            k=15
+        )
+
+    elif intent == "conclusion":
+
+        query = """
+        conclusion concluding remarks findings summary of results
+        """
+
+        return vectorstore.similarity_search(
+            query,
+            k=20
+        )
+
+    elif intent == "future_work":
+
+        query = """
+        future work future scope future directions
+        """
+
+        return vectorstore.similarity_search(
+            query,
+            k=20
+        )
+
+    elif intent == "limitations":
+
+        query = """
+        limitations drawbacks challenges weaknesses
+        """
+
+        return vectorstore.similarity_search(
+            query,
+            k=20
+        )
+
+    return vectorstore.similarity_search(
+        question,
+        k=15
+    )
 
 
 def research_agent(state):
 
-    print("🔍 Research agent searching...")
+    print("🔍 Research Agent Running...")
 
-
-    embeddings = OllamaEmbeddings(
-        model="nomic-embed-text"
-    )
-
-
-    vectorstore = Chroma(
-
-        persist_directory=DB_DIR,
-
-        embedding_function=embeddings,
-
-        collection_name=COLLECTION_NAME
-
-    )
-
-
-
+    chat_id = state["chat_id"]
     question = state["question"]
 
+    vectorstore = get_vectorstore(chat_id)
 
+    intent = classify_intent(question)
 
-    # ---------------------------------
-    # Get complete paper information
-    # First pages -> title/authors
-    # Last pages -> conclusion/future scope
-    # ---------------------------------
+    print(f"Detected intent: {intent}")
 
-    all_docs = vectorstore.get()
-
-
-
-    global_context = ""
-
-
-
-    if all_docs and "documents" in all_docs:
-
-
-        documents = all_docs["documents"]
-
-        metadatas = all_docs["metadatas"]
-
-
-        total = len(documents)
-
-
-
-        # first pages
-        for text, meta in zip(
-
-            documents[:5],
-
-            metadatas[:5]
-
-        ):
-
-
-            global_context += f"""
-
-PAGE {meta.get("page")}
-
-{text}
-
-----------------
-
-"""
-
-
-
-        # last pages
-        if total > 5:
-
-
-            for text, meta in zip(
-
-                documents[-5:],
-
-                metadatas[-5:]
-
-            ):
-
-
-                global_context += f"""
-
-PAGE {meta.get("page")}
-
-{text}
-
-----------------
-
-"""
-
-
-
-    # ---------------------------------
-    # Semantic retrieval
-    # ---------------------------------
-
-    results = vectorstore.similarity_search(
-
-        question,
-
-        k=8
-
+    docs = retrieve_docs(
+        vectorstore,
+        intent,
+        question
     )
 
+    context = ""
 
+    for doc in docs:
 
-    search_context = ""
+        source = doc.metadata.get(
+            "source",
+            "Unknown"
+        )
 
+        page = doc.metadata.get(
+            "page",
+            "Unknown"
+        )
 
+        context += f"""
 
-    for doc in results:
-
-
-        search_context += f"""
-
-PAGE {doc.metadata.get("page")}
+SOURCE FILE: {source}
+PAGE: {page}
 
 {doc.page_content}
 
-----------------
+=================================================
 
 """
-
-
-
-    final_context = f"""
-
-===== IMPORTANT PAPER PAGES =====
-
-{global_context}
-
-
-
-===== RELEVANT SEARCH RESULTS =====
-
-{search_context}
-
-"""
-
-
 
     return {
 
-        "context": final_context
+        "context": context
 
     }

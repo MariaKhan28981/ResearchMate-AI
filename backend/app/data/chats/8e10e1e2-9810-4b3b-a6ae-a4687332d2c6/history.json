@@ -1,0 +1,42 @@
+[
+  {
+    "role": "user",
+    "content": "What is the title of the paper?"
+  },
+  {
+    "role": "assistant",
+    "content": "I'm ready to assist you with your research question. What's the first step or question you'd like to ask about?"
+  },
+  {
+    "role": "user",
+    "content": "What is the title of the paper?"
+  },
+  {
+    "role": "assistant",
+    "content": "I could not find this information in the uploaded papers."
+  },
+  {
+    "role": "user",
+    "content": "Who are the authors of this paper?"
+  },
+  {
+    "role": "assistant",
+    "content": "I could not find this information in the uploaded papers."
+  },
+  {
+    "role": "user",
+    "content": "What is the conclusion of this paper?"
+  },
+  {
+    "role": "assistant",
+    "content": "I could not find this information in the uploaded papers."
+  },
+  {
+    "role": "user",
+    "content": "Summarise this paper."
+  },
+  {
+    "role": "assistant",
+    "content": "I could not find this information in the uploaded papers."
+  }
+]

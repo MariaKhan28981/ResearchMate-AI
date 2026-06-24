@@ -1,63 +1,72 @@
 from langchain_ollama import ChatOllama
 
 
-
 def writer_agent(state):
 
+    print("✍️ Writer agent generating answer...")
 
     llm = ChatOllama(
-
         model="llama3.2",
-
         temperature=0,
-
-        num_predict=500
-
+        num_predict=700
     )
 
+    prompt = f"""
+You are ResearchHelp,
+an expert academic research assistant.
 
-    prompt=f"""
+Conversation History:
 
-You are a research paper assistant.
-
-Answer the user's question using ONLY the paper context.
-
-Important rules:
-
-- Answer only what was asked.
-- Do not provide a full summary unless requested.
-- Do not repeat unrelated sections.
-- Do not guess.
-- Do not use outside knowledge.
-- Do not convert initials into fake full names.
-- Authors means only the paper author list.
+{state["history"]}
 
 
-If information is unavailable, say:
-
-"I could not find this information in the uploaded paper."
-
-
-Question:
-
-{state["question"]}
-
-
-Paper Context:
+Retrieved Paper Context:
 
 {state["context"]}
 
 
+Current Question:
+
+{state["question"]}
+
+
+Rules:
+
+1. Use ONLY the provided paper context.
+
+2. Use conversation history to understand references like:
+   - "they"
+   - "this method"
+   - "that dataset"
+
+3. Do NOT invent information.
+
+4. If the answer cannot be found, respond:
+
+"I could not find this information in the uploaded papers."
+
+5. If multiple papers are involved,
+mention which paper the answer comes from.
+
+6. For summaries:
+Provide:
+
+- Title
+- Authors
+- Research Problem
+- Methodology
+- Dataset
+- Results
+- Conclusion
+
+Only when user explicitly asks for a summary.
+
+
 Answer:
-
 """
-
 
     response = llm.invoke(prompt)
 
-
     return {
-
-        "answer":response.content
-
+        "answer": response.content
     }

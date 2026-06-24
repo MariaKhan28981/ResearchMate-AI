@@ -1,7 +1,9 @@
-from typing import TypedDict, List
+from typing import TypedDict
 
 
 class AgentState(TypedDict):
+
+    chat_id: str
 
     question: str
 
@@ -9,4 +11,4 @@ class AgentState(TypedDict):
 
     answer: str
 
-    sources: List[str]
+    history: str
